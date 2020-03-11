@@ -24,6 +24,8 @@ var sort = require('sort-stream');
 var moment = require('moment');
 var config = require('./config').config;
 
+var webserver = require('gulp-webserver');
+
 var destination = config.buildDest;
 
 // command line params
@@ -39,9 +41,9 @@ gulp.task('blog', ['blog-posts-list'], function () {
       // first inject the build destination so include knows where to go
       var html = mustache.render(
         String(file.contents), {
-          buildDest: config.buildDest
+          buildDest: destination + 'blog/'
         });
-      file.contents = new Buffer(html);
+      file.contents = new Buffer.from(html);
       cb(null, file);
     }))
     // then actually include the headers, navs, blogposts, footer and tail
@@ -52,7 +54,7 @@ gulp.task('blog', ['blog-posts-list'], function () {
         String(file.contents), {
           title: 'Blog'
         });
-      file.contents = new Buffer(html);
+      file.contents = new Buffer.from(html);
       cb(null, file);
     }))
     // now we have /blog tada
@@ -98,7 +100,7 @@ gulp.task('blog-posts-list', ['blog-posts-html'], function () {
           }
         })
       });
-      file.contents = new Buffer(html);
+      file.contents = new Buffer.from(html);
       cb(null, file);
     }))
     // sort the list newest-first
@@ -127,20 +129,20 @@ gulp.task('blog-posts-html', function () {
     // insert frontmatter and partial as mustache vars into post template
     .pipe(es.map(function (file, cb) {
       var html = mustache.render(post, {
-        buildDest: config.buildDest,
+        buildDest: destination,
         include: file.frontMatter.readfullarticle,
         date: moment(file.frontMatter.date).format('MMMM D, YYYY'),
         authors: file.frontMatter.authors,
         rendered: file.contents
       });
-      file.contents = new Buffer(html);
+      file.contents = new Buffer.from(html);
       cb(null, file);
     }))
     // include stuff
     .pipe(fileInclude())
     // insert handlebars values from frontmatter into head template
     .pipe(es.map(function (file, cb) {
-      file.contents = new Buffer(
+      file.contents = new Buffer.from(
         mustache.render(
           String(file.contents), {
             title: file.frontMatter.title,
@@ -174,7 +176,7 @@ gulp.task('html', ['blog'], function () {
         String(file.contents), {
           title: file.frontMatter.title
         });
-      file.contents = new Buffer(html);
+      file.contents = new Buffer.from(html);
       cb(null, file);
     }))
     .pipe(gulpif(isProduction, gzip()))
@@ -277,9 +279,9 @@ gulp.task('rss', ['rss-items'], function () {
       // first inject the build destination so include knows where to go
       var xml = mustache.render(
         String(file.contents), {
-          buildDest: config.buildDest
+          buildDest: destination
         });
-      file.contents = new Buffer(xml);
+      file.contents = new Buffer.from(xml);
       cb(null, file);
     }))
     // then actually include the items
@@ -306,7 +308,7 @@ gulp.task('rss-items', function () {
         item: file.frontMatter,
         // link: 'https://colab.coop/blog' + '/' + file.frontMatter.readfullarticle + '.html'
       });
-      file.contents = new Buffer(xml);
+      file.contents = new Buffer.from(xml);
       cb(null, file);
     }))
     // sort the list newest-first
@@ -343,4 +345,13 @@ gulp.task('watch', ['default'], function() {
   gulp.watch('src/images/**/*', ['images']);
 });
 
-// test
+// web server
+ 
+gulp.task('serve', function() {
+  gulp.src(destination)
+    .pipe(webserver({
+      port: 8089,
+      livereload: true,
+      open: true
+    }));
+});
