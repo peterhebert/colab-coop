@@ -1,5 +1,5 @@
 var gulp = require('gulp');
-var sass = require('gulp-ruby-sass');
+var sass = require('gulp-sass');
 var autoprefixer = require('gulp-autoprefixer');
 var minifycss = require('gulp-minify-css');
 var jshint = require('gulp-jshint');
@@ -197,10 +197,12 @@ gulp.task('fonts', function () {
 });
 
 // sass
+sass.compiler = require('node-sass');
+
 gulp.task('styles', ['fonts'], function() {
-  return gulp.src('src/styles/**/*.scss')
-    .pipe(sass({ style: 'expanded', container: './tmp' }))
-    .pipe(autoprefixer('last 2 version', 'safari 5', 'ie 8', 'ie 9', 'opera 12.1', 'ios 6', 'android 4'))
+  return gulp.src('./src/styles/**/*.scss')
+    .pipe(sass().on('error', sass.logError))
+    .pipe(autoprefixer('last 3 major versions'))
     .pipe(gulpif(isProduction, rename({suffix: '.min'})))
     .pipe(gulpif(isProduction, minifycss()))
     .pipe(gulpif(isProduction, gzip()))
